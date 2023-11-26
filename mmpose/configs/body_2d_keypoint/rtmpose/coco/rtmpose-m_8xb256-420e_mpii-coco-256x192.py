@@ -245,39 +245,16 @@ dataset_mpii = dict(
 
 # val dataset
 dataset_coco_val = dict(
-    type='RepeatDataset',
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        data_mode=data_mode,
-        ann_file='coco/annotations/person_keypoints_val2017.json',
-        data_prefix=dict(img='coco/images/val2017/'),
-        pipeline=[
-            dict(
-            type='KeypointConverter',
-            num_keypoints=21,
-            mapping=[
-                (0, 0),
-                (1, 1),
-                (2, 2),
-                (3, 3),
-                (4, 4),
-                (5, 5),
-                (6, 6),
-                (7, 7),
-                (8, 8),
-                (9, 9),
-                (10, 10),
-                (11, 11),
-                (12, 12),
-                (13, 13),
-                (14, 14),
-                (15, 15),
-                (16, 16),
-            ])
-        ],
-    ),
-    times=3)
+    type='CocoDataset',
+    data_root=data_root,
+    data_mode=data_mode,
+    ann_file='coco/annotations/person_keypoints_val2017.json',
+    # bbox_file='data/coco/person_detection_results/'
+    # 'COCO_val2017_detections_AP_H_56_person.json',
+    data_prefix=dict(img='coco/images/val2017/'),
+    test_mode=True,
+    pipeline=[],
+)
 
 # val dataset
 dataset_mpii_val = dict(
@@ -286,29 +263,8 @@ dataset_mpii_val = dict(
     data_mode=data_mode,
     ann_file='mpii/annotations/mpii_val.json',
     data_prefix=dict(img='mpii/images/'),
-    pipeline=[
-        dict(
-            type='KeypointConverter',
-            num_keypoints=21,
-            mapping=[
-                (0, 16),
-                (1, 14),
-                (2, 12),
-                (3, 11),
-                (4, 13),
-                (5, 15),
-                (6, 17),
-                (7, 18),
-                (8, 19),
-                (9, 20),
-                (10, 10),
-                (11, 8),
-                (12, 6),
-                (13, 5),
-                (14, 7),
-                (15, 9),
-            ])
-    ],
+    pipeline=[],
+    test_mode=True,
 )
 
 
@@ -369,8 +325,37 @@ custom_hooks = [
         switch_pipeline=train_pipeline_stage2)
 ]
 
+# MPII to COCO converter for validator
+mpii_to_coco_converter = dict(
+    typr='KeypointConverter',
+    num_keypoints=17,
+    mapping=[
+        (0,16),
+        (1,14),
+        (2,12),
+        (3,11),
+        (4,13),
+        (5,15),
+        (10,10),
+        (11,8),
+        (12,6),
+        (13,5),
+        (14,7),
+        (15,9),
+        ])
+
 # evaluators
 val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'coco/annotations/person_keypoints_val2017.json')
+    type='MultiDatasetEvaluator',
+    metrics=[
+        dict(type='CocoMetric',
+             ann_file=data_root + 'coco/annotations/person_keypoints_val2017.json'),
+        dict(type='CocoMetric',
+            ann_file='data/mpii/annotations/mpii_val.json',
+            use_area=False,
+            gt_converter=mpii_to_coco_converter,
+            prefix='mpii')
+    ],
+    datasets=[dataset_coco_val, dataset_mpii_val],
+    )
 test_evaluator = val_evaluator
