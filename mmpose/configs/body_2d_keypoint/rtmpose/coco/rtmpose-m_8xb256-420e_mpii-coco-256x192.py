@@ -216,7 +216,7 @@ dataset_mpii = dict(
     type='MpiiDataset',
     data_root=data_root,
     data_mode=data_mode,
-    ann_file='mpii/annotations/mpii_train.json',
+    ann_file='mpii/annotations/mpii2coco_train.json',
     data_prefix=dict(img='mpii/images/'),
     pipeline=[
         dict(
@@ -261,7 +261,7 @@ dataset_mpii_val = dict(
     type='MpiiDataset',
     data_root=data_root,
     data_mode=data_mode,
-    ann_file='mpii/annotations/mpii_val.json',
+    ann_file='mpii/annotations/mpii2coco_val.json',
     data_prefix=dict(img='mpii/images/'),
     pipeline=[],
     test_mode=True,
@@ -351,7 +351,7 @@ val_evaluator = dict(
         dict(type='CocoMetric',
              ann_file=data_root + 'coco/annotations/person_keypoints_val2017.json'),
         dict(type='CocoMetric',
-            ann_file='data/mpii/annotations/mpii_val.json',
+            ann_file='data/mpii/annotations/mpii2coco_val.json',
             use_area=False,
             gt_converter=mpii_to_coco_converter,
             prefix='mpii')
