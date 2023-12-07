@@ -4,7 +4,7 @@ import numpy as np
 import json
 
 
-db_type = 'train' # 'train'
+db_type = 'val' # 'train'
 mpii_file_path = f'data/mpii/annotations/mpii_{db_type}.json' 
 save_path = 'util/mpii2coco_' + db_type + '.json'
 
@@ -61,9 +61,11 @@ for img_id in range(img_num):
             kps[i][1] = annot_file[img_id]['joints'][i][1]
             kps[i][2] = 1
     
+    center = annot_file[img_id]['center']
+    scale = annot_file[img_id]['scale']
 
     person_dict = {'id': aid, 'image_id': img_id, 'category_id': 1, 'iscrowd': 0, 'keypoints': kps.reshape(-1).tolist(),
-                    'num_keypoints': int(np.sum(kps[:,2]==1))}
+                    'num_keypoints': int(np.sum(kps[:,2]==1)), 'center': center, 'scale': scale}
     coco['annotations'].append(person_dict)
     aid += 1
 
