@@ -95,24 +95,31 @@ class KeypointConverter(BaseTransform):
         if len(results['keypoints_visible'].shape) > 2:
             results['keypoints_visible'] = results['keypoints_visible'][:, :,
                                                                         0]
-
+ 
         # Initialize output arrays
         keypoints = np.zeros((num_instances, self.num_keypoints, 3))
+        keypoint_scores = np.zeros((num_instances, self.num_keypoints))
         keypoints_visible = np.zeros((num_instances, self.num_keypoints))
         key = 'keypoints_3d' if 'keypoints_3d' in results else 'keypoints'
         c = results[key].shape[-1]
-
+ 
         flip_indices = results.get('flip_indices', None)
-
+ 
         # Create a mask to weight visibility loss
         keypoints_visible_weights = keypoints_visible.copy()
         keypoints_visible_weights[:, self.target_index] = 1.0
-
+ 
         # Interpolate keypoints if pairs of source indexes provided
         if self.interpolation:
             keypoints[:, self.target_index, :c] = 0.5 * (
                 results[key][:, self.source_index] +
                 results[key][:, self.source_index2])
+            
+            if 'keypoint_scores' in results:
+                keypoint_scores[:, self.target_index] = 0.5 * (
+                    results['keypoint_scores'][:, self.source_index] +
+                    results['keypoint_scores'][:, self.source_index2])
+ 
             keypoints_visible[:, self.target_index] = results[
                 'keypoints_visible'][:, self.source_index] * results[
                     'keypoints_visible'][:, self.source_index2]
@@ -128,11 +135,16 @@ class KeypointConverter(BaseTransform):
             keypoints[:,
                       self.target_index, :c] = results[key][:,
                                                             self.source_index]
+            if 'keypoint_scores' in results:
+                keypoint_scores[:, self.target_index] = results[
+                    'keypoint_scores'][:, self.source_index]
             keypoints_visible[:, self.target_index] = results[
                 'keypoints_visible'][:, self.source_index]
-
+ 
         # Update the results dict
         results['keypoints'] = keypoints[..., :2]
+        if 'keypoint_scores' in results:
+            results['keypoint_scores'] = keypoint_scores
         results['keypoints_visible'] = np.stack(
             [keypoints_visible, keypoints_visible_weights], axis=2)
         if 'keypoints_3d' in results:
@@ -141,7 +153,7 @@ class KeypointConverter(BaseTransform):
             results['lifting_target_visible'] = keypoints_visible[
                 results['target_idx']]
         results['flip_indices'] = flip_indices
-
+ 
         return results
 
     def __repr__(self) -> str:
