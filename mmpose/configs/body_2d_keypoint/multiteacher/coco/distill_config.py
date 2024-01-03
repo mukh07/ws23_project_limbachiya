@@ -1,5 +1,5 @@
 _base_ = [
-    '../../../rtmpose/coco/rtmpose-m_8xb256-420e_mpii-coco-256x192.py'
+    '../../rtmpose/coco/rtmpose-m_8xb256-420e_mpii-coco-256x192.py'
 ]
 
 # config settings
@@ -11,9 +11,9 @@ train_cfg = dict(max_epochs=60, val_interval=10)
 model = dict(
     _delete_=True,
     type='MultiTeacherDistiller',
-    teacher1_cfg='',
-    teacher2_cfg='',
-    student_cfg='',
+    teacher1_cfg='mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-m_8xb256-420e_coco-256x192.py',
+    teacher2_cfg='mmpose/configs/body_2d_keypoint/rtmpose/mpii/rtmpose-m_8xb64-210e_mpii-256x256.py',
+    student_cfg='mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-m_8xb256-420e_mpii-coco-256x192.py',
     distill_cfg=[
         dict(methods=[
             dict(
@@ -24,8 +24,8 @@ model = dict(
             )
         ]),
     ],
-    teacher1_pretrained='work_dirs/..',
-    teacher2_pretrained='',
+    teacher1_pretrained='work_dirs/rtmpose-m_8xb256-420e_coco-256x192/best_coco_AP_epoch_100.pth',
+    teacher2_pretrained='work_dirs/rtmpose-m_8xb64-210e_mpii-256x256/best_PCK_epoch_100.pth',
     train_cfg=train_cfg,
     data_preprocessor=dict(
         type='PoseDataPreprocessor',
