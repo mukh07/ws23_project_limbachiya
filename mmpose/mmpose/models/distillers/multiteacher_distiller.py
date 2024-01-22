@@ -3,6 +3,7 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmengine.config import Config
 from mmengine.logging import MessageHub
 from mmengine.model import BaseModel
@@ -144,7 +145,7 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
             lt1_x, lt1_y = self.teacher1.head(fea_t1)
             pred_t1 = (lt1_x, lt1_y)
 
-            fea_t2 = self.teacher2.extract_feat(inputs)
+            fea_t2 = self.teacher2.extract_feat(F.interpolate(inputs, size=(256, 256), mode='bilinear', align_corners=False))
             lt2_x, lt2_y = self.teacher2.head(fea_t2)
             pred_t2 = (lt2_x, lt2_y)
 

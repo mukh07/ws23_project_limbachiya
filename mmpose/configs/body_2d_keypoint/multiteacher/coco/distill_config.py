@@ -5,7 +5,7 @@ _base_ = [
 # config settings
 logit = True
 
-train_cfg = dict(max_epochs=60, val_interval=10)
+# train_cfg = dict(max_epochs=60, val_interval=10)
 
 # method details
 model = dict(
@@ -26,7 +26,7 @@ model = dict(
     ],
     teacher1_pretrained='work_dirs/rtmpose-m_8xb256-420e_coco-256x192/best_coco_AP_epoch_100.pth',
     teacher2_pretrained='work_dirs/rtmpose-m_8xb64-210e_mpii-256x256/best_PCK_epoch_100.pth',
-    train_cfg=train_cfg,
+    # train_cfg=train_cfg,
     data_preprocessor=dict(
         type='PoseDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
