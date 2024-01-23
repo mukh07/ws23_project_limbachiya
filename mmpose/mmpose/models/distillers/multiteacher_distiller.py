@@ -31,6 +31,7 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
         teacher2_cfg (str): Config file of the teacher #2 model.
         student_cfg (str): Config file of the student model.
         distill_cfg (dict): Config for distillation. Defaults to None.
+        weight(list):[student_weight, coco_teacher_weight, mpii_teacher_weight]
         teacher1_pretrained (str): Path of the pretrained teacher #1 model.
             Defaults to None.
         teacher2_pretrained (str): Path of the pretrained teacher #2 model.
@@ -49,6 +50,7 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
                  teacher2_cfg,
                  student_cfg,
                  distill_cfg=None,
+                 weight=None,
                  teacher1_pretrained=None,
                  teacher2_pretrained=None,
                  train_cfg: OptConfigType = None,
@@ -75,14 +77,15 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
 
         self.distill_cfg = distill_cfg
         self.distill_losses = nn.ModuleDict()
+        self.weight = weight
         if self.distill_cfg is not None:
             for item_loc in distill_cfg:
                 for item_loss in item_loc.methods:
                     loss_name = item_loss.name
                     use_this = item_loss.use_this
                     if use_this:
-                        self.distill_losses[loss_name] = MODELS.build(
-                            item_loss)
+                        self.distill_losses[loss_name] = (MODELS.build(item_loss))
+
 
         # self.two_dis = two_dis
         self.train_cfg = train_cfg if train_cfg else self.student.train_cfg
@@ -145,9 +148,11 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
             lt1_x, lt1_y = self.teacher1.head(fea_t1)
             pred_t1 = (lt1_x, lt1_y)
 
-            fea_t2 = self.teacher2.extract_feat(F.interpolate(inputs, size=(256, 256), mode='bilinear', align_corners=False))
+            fea_t2 = self.teacher2.extract_feat(F.interpolate(inputs, size=(256, 256), mode='bilinear', align_corners=True))
             lt2_x, lt2_y = self.teacher2.head(fea_t2)
-            pred_t2 = (lt2_x, lt2_y)
+            # Replace this with 1d interpolation with 512 -> 384
+            lt2_x = F.interpolate(lt2_x, size=384, mode='linear', align_corners=True)
+            pred_t2 = (lt2_x, lt2_y) # (B, 16, 512), (B, 16, 512) 
 
         # KLDiscretLoss
         fea_s = self.student.extract_feat(inputs)
@@ -178,35 +183,46 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
         ]
 
         # KDLoss
-        if 'loss_logit' in all_keys:
-            loss_name = 'loss_logit'
-            if len(lt1_x) == 17:
-                # Map keypoints from student 21 --> COCO 17 in pred_coco variable
-                stud_x = pred[0]
-                stud_y = pred[1]
-                stud_coco_x = stud_x[:17]
-                stud_coco_y = stud_y[:17]
-                pred_coco = (stud_coco_x, stud_coco_y)
-                losses[loss_name] = self.distill_losses[loss_name](
-                    pred_coco, pred_t1, self.student.head.loss_module.beta,
-                    target_weight)
-            else:
-                # Map keypoints from student 21 --> MPII 16 in pred_mpii variable
-                stud_x = pred[0]
-                stud_y = pred[1]
-                stud_mpii_x =[]
-                stud_mpii_y =[]
-                for i in mapping:
-                    stud_mpii_x.append(stud_x[i[1]])
-                    stud_mpii_y.append(stud_y[i[1]])
-                pred_mpii = (stud_mpii_x, stud_mpii_y)
-                losses[loss_name] = self.distill_losses[loss_name](
-                    pred_mpii, pred_t2, self.student.head.loss_module.beta,
-                    target_weight)
-            losses[loss_name] = (
-                1 - self.epoch / self.max_epochs) * losses[loss_name]
-            alpha = 0.3
-            losses[loss_name] = alpha * losses[loss_name] + (1-alpha) * ori_loss['loss_kpt']
+        if len(lt1_x) == 17:
+            loss_name = 'loss_logit_coco'
+            # Map keypoints from student 21 --> COCO 17 in pred_coco variable
+            stud_x = pred[0]
+            stud_y = pred[1]
+            stud_coco_x = stud_x[:, :17]
+            stud_coco_y = stud_y[:, :17]
+            pred_coco = (stud_coco_x, stud_coco_y)
+
+            coco_teacher_weight = self.weight[1]
+            losses[loss_name] = coco_teacher_weight * self.distill_losses[loss_name](
+                pred_coco, pred_t1, self.student.head.loss_module.beta,
+                target_weight)
+        else:
+            loss_name = 'loss_logit_mpii'
+            # Map keypoints from student 21 --> MPII 16 in pred_mpii variable
+            stud_x = pred[0] # (B, 21, 2*w)
+            stud_y = pred[1] # (B, 21, 2*h)
+            target_index, source_index = zip(*mapping)
+            stud_x[:, target_index, :] = stud_x[:, source_index, :]
+            stud_y[:, target_index, :] = stud_y[:, source_index, :]
+            stud_mpii_x = stud_x[:, :16]
+            stud_mpii_y = stud_y[:, :16]
+
+            pred_mpii = (stud_mpii_x, stud_mpii_y)
+
+            mpii_teacher_weight = self.weight[2]
+            losses[loss_name] = mpii_teacher_weight * self.distill_losses[loss_name](
+                pred_mpii, pred_t2, self.student.head.loss_module.beta,
+                target_weight)
+
+        # NOTE: Do we want to eep this line?
+        losses[loss_name] = (1 - self.epoch / self.max_epochs) * losses[loss_name]
+
+        # Pass these weights from config 
+        student_weight = self.weight[0]
+        losses['loss_total'] = student_weight * ori_loss['loss_kpt'] + \
+            losses.get('loss_logit_coco', 0) + \
+            losses.get('loss_logit_mpii', 0)
+
         """
         student_kpts = student(input)  # 21 keypoints
         if len(gt_kpts) == 17:
