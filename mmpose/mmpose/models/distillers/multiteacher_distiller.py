@@ -183,7 +183,7 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
         ]
 
         # KDLoss
-        if len(lt1_x) == 17:
+        if lt1_x.shape[1] == 17:
             loss_name = 'loss_logit_coco'
             # Map keypoints from student 21 --> COCO 17 in pred_coco variable
             stud_x = pred[0]
