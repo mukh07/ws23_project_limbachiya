@@ -183,7 +183,7 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
         ]
 
         # KDLoss
-        if lt1_x.shape[1] == 17:
+        if 'loss_logit_coco' in all_keys:
             loss_name = 'loss_logit_coco'
             # Map keypoints from student 21 --> COCO 17 in pred_coco variable
             stud_x = pred[0]
@@ -196,7 +196,8 @@ class MultiTeacherDistiller(BaseModel, metaclass=ABCMeta):
             losses[loss_name] = coco_teacher_weight * self.distill_losses[loss_name](
                 pred_coco, pred_t1, self.student.head.loss_module.beta,
                 target_weight)
-        else:
+
+        if 'loss_logit_mpii' in all_keys:
             loss_name = 'loss_logit_mpii'
             # Map keypoints from student 21 --> MPII 16 in pred_mpii variable
             stud_x = pred[0] # (B, 21, 2*w)
