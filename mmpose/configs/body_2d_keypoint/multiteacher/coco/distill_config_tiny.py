@@ -28,9 +28,9 @@ model = dict(
             )
         ]),
     ],
-    weight=[0.3, 0.35, 0.35], # [student_weight, coco_teacher_weight, mpii_teacher_weight]
-    teacher1_pretrained='work_dirs/rtmpose-m_8xb256-420e_coco-256x192/best_coco_AP_epoch_100.pth',
-    teacher2_pretrained='work_dirs/rtmpose-m_8xb64-210e_mpii-256x256/best_PCK_epoch_100.pth',
+    weight=[0.3, 0.25, 0.45], # [student_weight, coco_teacher_weight, mpii_teacher_weight]
+    teacher1_pretrained='teachers/rtmpose-m_simcc-coco_pt-aic-coco_420e-256x192-d8dd5ca4_20230127.pth',
+    teacher2_pretrained='teachers/rtmpose-m_simcc-mpii_pt-aic-coco_210e-256x256-ec4dbec8_20230206.pth',
     # train_cfg=train_cfg,
     data_preprocessor=dict(
         type='PoseDataPreprocessor',
