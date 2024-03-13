@@ -1,6 +1,6 @@
 # Unified 2D Human Pose Estimation
 
-There exist multiple datasets for 2D human pose estimation, each with its unique set of annotated body joints.Generally, each neural network is trained on a particular dataset.This approach often results in networks that excel on their specific dataset but struggle when tested on others. Thus, there rarely exists a network which can perform well on most of the datasets. Therefore, using the concept of knowledge distillation, we have used a group of pre-trained teachers networks to help create a single, adaptable student network capable of estimating poses across dataset.
+There exist multiple datasets for 2D human pose estimation, each with its unique set of annotated body joints.Generally, each neural network is trained on a particular dataset.This approach often results in networks that excel on their specific dataset but struggle when tested on others. Thus, there rarely exists a network which can perform well on most of the datasets. Using the concept of knowledge distillation, we have used a group of pre-trained teachers networks (COCO teacher model & MPII teacher model) to help create a single, adaptable student network capable of estimating poses across dataset (COCO as well as MPII).
 ## Installation
 
 Entire project is built using python 3.11
@@ -40,7 +40,7 @@ Training a model-
 ```bash
 python3.11 mmpose/tools/train.py <LOCATION OF MODEL CONFIG>
 ```
-Visualization uisng trained model on an image
+Visualization using trained model on an image
 ```bash
 python demo/inferencer_demo.py <IMAGE_PATH> --pose2d <MODEL CONFIG_PATH> --pose2d-weights <MODEL CHECKPOINT> --vis-out-dir <O/P DIR> --radius 4 --thickness 2
 ```
