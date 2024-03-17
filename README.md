@@ -16,7 +16,7 @@ Entire project is built using python 3.11
 ```
 Download COCO and MPII pose estimation datasets in 'data' directory.
     
-## Documentation
+## About
 
 In this work, we used MMPose - an open-source toolbox for pose estimation based on PyTorch. It includes scripts for model and dataset configurations which makes it easier for experimentation.
 
@@ -44,13 +44,17 @@ Visualization using trained model on an image
 ```bash
 python demo/inferencer_demo.py <IMAGE_PATH> --pose2d <MODEL CONFIG_PATH> --pose2d-weights <MODEL CHECKPOINT> --vis-out-dir <O/P DIR> --radius 4 --thickness 2
 ```
-Important model configs used for training student models using knowledge distillation:
+Major contributation of this project for performing knowledge distillation:
 ```
 Distilling RTMPose-s using RTMPose-m teacher models trained on COCO and MPII : mmpose/configs/body_2d_keypoint/multiteacher/coco/distill_config_small.py
 
 Distilling RTMPose-t using RTMPose-m teacher models trained on COCO and MPII : mmpose/configs/body_2d_keypoint/multiteacher/coco/distill_config_tiny.py
 
 Combined dataset config for COCO and MPII : mmpose/configs/_base_/datasets/coco_mpii.py
+
+RTMPose-t config for training on MPII and COCO without knowledge Distillation : mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-t_8xb256-420e_mpii-coco-256x192.py
+
+RTMPose-s config for training on MPII and COCO without knowledge Distillation : mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-s_8xb256-420e_mpii-coco-256x192.py
 ```
 
 
